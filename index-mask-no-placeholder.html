@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Masked Input</title>
+    <style>
+      input {
+        font-size: 1.2em;
+        padding: 5px;
+        width: 250px;
+        color: black; /* User input color */
+      }
+      input::placeholder {
+        color: #999; /* Placeholder color */
+      }
+    </style>
+  </head>
+  <body>
+    <label for="maskedInput">Enter Number:</label>
+    <input type="text" id="maskedInput" placeholder="(###) ###-####" />
+
+    <script>
+      const mask = '(###) ###-####'
+      const input = document.getElementById('maskedInput')
+
+      // Set initial value to the full mask
+      input.value = mask
+
+      input.addEventListener('input', updateInput)
+      input.addEventListener('keydown', handleKeydown)
+
+      function updateInput(e) {
+        let value = e.target.value.replace(/[^0-9]/g, '') // Remove all non-numeric characters
+        let maskedValue = applyMask(value, mask)
+        let cursorPosition = e.target.selectionStart
+
+        // Calculate how many non-mask characters are before the cursor
+        let charsBeforeCursor = e.target.value.slice(0, cursorPosition).replace(/[^0-9]/g, '').length
+
+        // Adjust cursor position based on the number of characters entered
+        let newCursorPosition = 0
+        let charsEncountered = 0
+        for (let i = 0; i < maskedValue.length; i++) {
+          if (/[0-9]/.test(maskedValue[i])) {
+            charsEncountered++
+          }
+          if (charsEncountered > charsBeforeCursor) {
+            break
+          }
+          newCursorPosition++
+        }
+
+        e.target.value = maskedValue
+        e.target.setSelectionRange(newCursorPosition, newCursorPosition)
+      }
+
+      function handleKeydown(e) {
+        let start = e.target.selectionStart
+        let end = e.target.selectionEnd
+
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          e.preventDefault()
+
+          let direction = e.key === 'ArrowLeft' ? -1 : 1
+          let newPosition
+
+          if (e.key === 'ArrowLeft') {
+            newPosition = findNextPosition(e.target.value, e.shiftKey ? start : start, direction)
+          } else {
+            newPosition = findNextPosition(e.target.value, e.shiftKey ? end : end, direction)
+          }
+
+          if (e.shiftKey) {
+            if (start === end) {
+              // Start a new selection
+              if (direction === -1) {
+                start = newPosition
+              } else {
+                end = newPosition
+              }
+            } else {
+              // Extend or shrink existing selection
+              if (direction === -1) {
+                start = newPosition
+              } else {
+                end = newPosition
+              }
+            }
+            e.target.setSelectionRange(start, end)
+          } else {
+            // Move cursor without selection
+            e.target.setSelectionRange(newPosition, newPosition)
+          }
+        } else if (e.key === 'Backspace') {
+          if (start > 0) {
+            e.preventDefault()
+            let newPosition = findNextPosition(e.target.value, start, -1)
+            let currentValue = e.target.value
+            let newValue = currentValue.slice(0, newPosition) + currentValue.slice(start)
+            e.target.value = newValue
+            updateInput({ target: e.target })
+            e.target.setSelectionRange(newPosition, newPosition)
+          }
+        }
+      }
+
+      function applyMask(value, mask) {
+        let maskedValue = ''
+        let valueIndex = 0
+
+        for (let i = 0; i < mask.length; i++) {
+          if (mask[i] === '#') {
+            maskedValue += valueIndex < value.length ? value[valueIndex++] : '#'
+          } else {
+            maskedValue += mask[i]
+          }
+        }
+
+        return maskedValue
+      }
+
+      function adjustCursorPosition(cursorPosition, oldValue, newValue) {
+        // Move the cursor to skip over non-digit characters
+        while (cursorPosition < newValue.length && /\D/.test(newValue[cursorPosition])) {
+          cursorPosition++
+        }
+        return cursorPosition
+      }
+
+      function findNextPosition(value, currentPosition, direction) {
+        let actualChars = value.replace(/[^a-zA-Z0-9]/g, '')
+        let actualIndex = value.slice(0, currentPosition).replace(/[^a-zA-Z0-9]/g, '').length
+
+        actualIndex += direction
+        actualIndex = Math.max(0, Math.min(actualIndex, actualChars.length))
+
+        // Find the corresponding position in the masked value
+        let maskedIndex = 0
+        let count = 0
+        while (count < actualIndex && maskedIndex < value.length) {
+          if (/[a-zA-Z0-9]/.test(value[maskedIndex])) {
+            count++
+          }
+          maskedIndex++
+        }
+
+        return maskedIndex
+      }
+
+      // Set initial value to empty string
+      input.value = ''
+    </script>
+  </body>
+</html>

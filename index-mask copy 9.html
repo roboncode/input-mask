@@ -18,38 +18,22 @@
   </head>
   <body>
     <label for="maskedInput">Enter Number:</label>
-    <input type="text" id="maskedInput" placeholder="(###) ###-####" style="font-family: monospace" />
+    <input type="text" id="maskedInput" placeholder="(***) ***-****" style="font-family: monospace" />
 
     <script>
       const unmaskedChar = '*'
-      // const pattern = '(***) ***-****'
-      // const pattern = '***-***-****'
-      // const pattern = '  ******'
-      const pattern = '**/**/****'
-      // const displayMask = '___-___-____'
-      // const displayMask = '$        '
-      const displayMask = '__/__/____'
-      // const displayMask = new Array(pattern.length).fill(' ').join('')
-      const enableMasking = true
+      // const mask = "(###) ###-####";
+      const pattern = '(***) ***-****'
       const input = document.getElementById('maskedInput')
       const unmaskedCharsRegex = /[^a-zA-Z0-9]/g
       const maskedCharsRegex = /[a-zA-Z0-9]/
 
-      if (enableMasking) {
-        // Set initial value based on enableMasking
-        input.value = displayMask
-        input.addEventListener('input', inputHandler)
-        input.addEventListener('keydown', keydownHandler)
-        input.addEventListener('click', clickHandler)
-        input.addEventListener('copy', copyHandler)
-      }
+      // Set initial value to the full mask
+      input.value = pattern
 
-      function copyHandler(e) {
-        e.preventDefault()
-        // copy only the unmasked characters
-        let text = input.value.replace(unmaskedCharsRegex, '')
-        navigator.clipboard.writeText(text)
-      }
+      input.addEventListener('input', inputHandler)
+      input.addEventListener('keydown', keydownHandler)
+      input.addEventListener('click', clickHandler)
 
       function clickHandler(e) {
         let value = e.target.value
@@ -71,8 +55,7 @@
         let cursorPosition = input.selectionStart
         let oldValue = input.value
         let strippedValue = oldValue.replace(unmaskedCharsRegex, '')
-
-        let newValue = enableMasking ? applyMask(strippedValue, displayMask, pattern) : strippedValue
+        let newValue = applyMask(strippedValue, pattern)
 
         // Count input characters before cursor
         let inputCharsBefore = oldValue.slice(0, cursorPosition).replace(unmaskedCharsRegex, '').length
@@ -140,23 +123,21 @@
 
           let newPosition
           if (e.key === 'ArrowLeft') {
-            // if shift key is pressed, find the previous position
             newPosition = findPreviousPosition(e.target.value, e.shiftKey ? startSelection : startSelection)
           } else {
-            // if shift key is not pressed, find the next position
             newPosition = findNextPosition(e.target.value, e.shiftKey ? endSelection : endSelection)
           }
 
           if (e.shiftKey) {
             if (startSelection === endSelection) {
-              // if startSelection is equal to endSelection, start a new selection
+              // Start a new selection
               if (e.key === 'ArrowLeft') {
                 startSelection = newPosition
               } else {
                 endSelection = newPosition
               }
             } else {
-              // if startSelection is not equal to endSelection, extend or shrink existing selection
+              // Extend or shrink existing selection
               if (e.key === 'ArrowLeft') {
                 startSelection = newPosition
               } else {
@@ -165,13 +146,14 @@
             }
             input.setSelectionRange(startSelection, endSelection)
           } else {
-            // if shift key is not pressed, move cursor without selection
+            // Move cursor without selection
             input.setSelectionRange(newPosition, newPosition)
           }
         } else if (e.key === 'Backspace') {
           e.preventDefault()
           if (startSelection > 0) {
             let newPosition = findPreviousPosition(value, startSelection)
+            console.log('newPosition', newPosition)
             let newValue = value.slice(0, newPosition) + unmaskedChar + value.slice(startSelection)
             input.value = newValue
             inputHandler({ target: input })
@@ -180,17 +162,15 @@
         }
       }
 
-      function applyMask(value, displayMask, pattern) {
-        if (!enableMasking) return value
-
+      function applyMask(value, mask) {
         let maskedValue = ''
         let valueIndex = 0
 
-        for (let i = 0; i < displayMask.length; i++) {
-          if (pattern[i] === unmaskedChar) {
-            maskedValue += valueIndex < value.length ? value[valueIndex++] : displayMask[i]
+        for (let i = 0; i < mask.length; i++) {
+          if (mask[i] === unmaskedChar) {
+            maskedValue += valueIndex < value.length ? value[valueIndex++] : unmaskedChar
           } else {
-            maskedValue += displayMask[i]
+            maskedValue += mask[i]
           }
         }
 
@@ -199,14 +179,13 @@
 
       function adjustCursorPosition(cursorPosition, oldValue, newValue) {
         // Move the cursor to skip over non-digit characters
-        while (cursorPosition < newValue.length && !maskedCharsRegex.test(newValue[cursorPosition])) {
+        while (cursorPosition < newValue.length && /\D/.test(newValue[cursorPosition])) {
           cursorPosition++
         }
         return cursorPosition
       }
 
       function findNextPosition(value, currentPosition) {
-        // if currentPosition is greater than or equal to the value length, return the value length
         if (currentPosition >= value.length - 1) {
           return value.length // Stay at the end if already at or past the last character
         }
@@ -214,43 +193,29 @@
         // use regex to find the last masked character position in value
         const lastMaskedCharPos = Number(value.split('').findLastIndex(char => maskedCharsRegex.test(char))) + 1
 
-        // check if the next character is unmasked and if it is, return the current position + 1
+        // check if the next character is masked
         if (pattern[currentPosition + 1] === unmaskedChar && currentPosition < lastMaskedCharPos) {
-          // if the next character is unmasked and the current position is less than the last masked character position, return the current position + 1
+          console.log('c-->', currentPosition + 1, lastMaskedCharPos, Math.min(currentPosition + 1, lastMaskedCharPos))
           return Number(Math.min(currentPosition + 1, lastMaskedCharPos))
         }
 
-        // if the next character is not unmasked, continue to the next character
         let newPosition = currentPosition + 1
 
-        // while the new position is less than the value length, check if the next character is unmasked
         while (newPosition < value.length) {
-          // if the next character is unmasked, return the new position
           if (pattern[newPosition] === unmaskedChar) {
-            // if the new position is less than the last masked character position, return the new position
             return Number(Math.min(newPosition, lastMaskedCharPos))
           }
-          // if the next character is not unmasked, continue to the next character
           newPosition++
         }
 
-        // if no next position is found, return the last masked character position
-        return lastMaskedCharPos
+        return lastMaskedCharPos // Return the end position if no next position found
       }
 
       function findPreviousPosition(value, currentPosition) {
-        // TODO: THIS I NEW NEEDS, TESTING if currentPosition is less than 0, return 0
-        if (currentPosition < 0) {
-          debugger
-          return 0
-        }
-
         let newPosition = currentPosition
 
-        // while the new position is greater than 0, check if the next character is unmasked
         while (newPosition > 0) {
           newPosition--
-          // if the next character is unmasked, return the new position
           if (pattern[newPosition] === unmaskedChar) {
             return newPosition
           }
@@ -259,8 +224,8 @@
         return 0
       }
 
-      // Set initial value based on enableMasking
-      input.value = enableMasking ? displayMask : ''
+      // Set initial value to empty string
+      input.value = ''
     </script>
   </body>
 </html>

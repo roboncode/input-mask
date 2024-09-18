@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Masked Input</title>
+    <style>
+      input {
+        font-size: 1.2em;
+        padding: 5px;
+        width: 250px;
+        color: black; /* User input color */
+      }
+      input::placeholder {
+        color: #999; /* Placeholder color */
+      }
+    </style>
+  </head>
+  <body>
+    <label for="maskedInput">Enter Number:</label>
+    <input type="text" id="maskedInput" placeholder="(###) ###-####" style="font-family: monospace" />
+
+    <script>
+      const unmaskedChar = '*'
+      // const mask = "(###) ###-####";
+      const pattern = '(***) ***-****'
+      const input = document.getElementById('maskedInput')
+      const unmaskedCharsRegex = /[^a-zA-Z0-9]/g
+      const maskedCharsRegex = /[a-zA-Z0-9]/
+
+      // Set initial value to the full mask
+      input.value = pattern
+
+      input.addEventListener('input', updateInput)
+      input.addEventListener('keydown', handleKeydown)
+
+      function updateInput(e) {
+        let input = e.target
+        let cursorPosition = input.selectionStart
+        let oldValue = input.value
+        let strippedValue = oldValue.replace(unmaskedCharsRegex, '')
+        let newValue = applyMask(strippedValue, pattern)
+
+        // Count input characters before cursor
+        let inputCharsBefore = oldValue.slice(0, cursorPosition).replace(unmaskedCharsRegex, '').length
+
+        // Find new cursor position
+        let newCursorPosition = 0
+        let charCount = 0
+        for (let i = 0; i < newValue.length; i++) {
+          if (charCount === inputCharsBefore) {
+            newCursorPosition = i
+            break
+          }
+          if (maskedCharsRegex.test(newValue[i])) {
+            charCount++
+          }
+        }
+
+        input.value = newValue
+        if (newCursorPosition === 0) {
+          newCursorPosition = newValue.length
+          input.setSelectionRange(newCursorPosition, newCursorPosition)
+        } else {
+          input.setSelectionRange(newCursorPosition, newCursorPosition)
+        }
+      }
+
+      function handleKeydown(e) {
+        let start = e.target.selectionStart
+        let end = e.target.selectionEnd
+        let value = e.target.value
+
+        if (e.key === 'ArrowRight') {
+          e.preventDefault()
+
+          if (start >= value.length) {
+            // Already at the end, do nothing
+            return
+          }
+
+          let lastInputPosition = value.lastIndexOf(unmaskedChar)
+          let newPosition = findNextPosition(value, e.shiftKey ? end : start)
+
+          // Ensure the cursor doesn't move beyond the last input character
+          newPosition = Math.min(newPosition, lastInputPosition + 1)
+
+          if (e.shiftKey) {
+            if (start === end) {
+              end = newPosition
+            } else {
+              end = newPosition
+            }
+            e.target.setSelectionRange(start, end)
+          } else {
+            e.target.setSelectionRange(newPosition, newPosition)
+          }
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault()
+
+          let newPosition
+          if (e.key === 'ArrowLeft') {
+            newPosition = findPreviousPosition(e.target.value, e.shiftKey ? start : start)
+          } else {
+            newPosition = findNextPosition(e.target.value, e.shiftKey ? end : end)
+          }
+
+          if (e.shiftKey) {
+            if (start === end) {
+              // Start a new selection
+              if (e.key === 'ArrowLeft') {
+                start = newPosition
+              } else {
+                end = newPosition
+              }
+            } else {
+              // Extend or shrink existing selection
+              if (e.key === 'ArrowLeft') {
+                start = newPosition
+              } else {
+                end = newPosition
+              }
+            }
+            e.target.setSelectionRange(start, end)
+          } else {
+            // Move cursor without selection
+            e.target.setSelectionRange(newPosition, newPosition)
+          }
+        } else if (e.key === 'Backspace') {
+          e.preventDefault()
+          if (start > 0) {
+            let newPosition = findPreviousPosition(value, start)
+            console.log('newPosition', newPosition)
+            let newValue = value.slice(0, newPosition) + unmaskedChar + value.slice(start)
+            e.target.value = newValue
+            updateInput({ target: e.target })
+            e.target.setSelectionRange(newPosition, newPosition)
+          }
+        }
+      }
+
+      function applyMask(value, mask) {
+        let maskedValue = ''
+        let valueIndex = 0
+
+        for (let i = 0; i < mask.length; i++) {
+          if (mask[i] === unmaskedChar) {
+            maskedValue += valueIndex < value.length ? value[valueIndex++] : unmaskedChar
+          } else {
+            maskedValue += mask[i]
+          }
+        }
+
+        return maskedValue
+      }
+
+      function adjustCursorPosition(cursorPosition, oldValue, newValue) {
+        // Move the cursor to skip over non-digit characters
+        while (cursorPosition < newValue.length && /\D/.test(newValue[cursorPosition])) {
+          cursorPosition++
+        }
+        return cursorPosition
+      }
+
+      function findNextPosition(value, currentPosition) {
+        // console.log('findNextPosition', value, currentPosition)
+        if (currentPosition >= value.length - 1) {
+          // debugger
+          return value.length // Stay at the end if already at or past the last character
+        }
+
+        let newPosition = currentPosition + 1
+
+        while (newPosition < value.length) {
+          if (pattern[newPosition] === unmaskedChar) {
+            return newPosition
+          }
+          newPosition++
+        }
+        debugger
+        return value.length // Return the end position if no next position found
+      }
+
+      // function findNextPosition(value, currentPosition) {
+      //   let newPosition = currentPosition + 1
+
+      //   while (newPosition < value.length) {
+      //     if (pattern[newPosition] === unmaskedChar) {
+      //       return newPosition
+      //     }
+      //     newPosition++
+      //   }
+
+      //   // Find the last masked character position
+      //   let lastMaskedPosition = pattern.lastIndexOf(unmaskedChar)
+
+      //   // Return the last masked character position or the current position, whichever is smaller
+      //   return Math.min(lastMaskedPosition, currentPosition)
+      // }
+
+      function findPreviousPosition(value, currentPosition) {
+        let newPosition = currentPosition
+
+        while (newPosition > 0) {
+          newPosition--
+          if (pattern[newPosition] === unmaskedChar) {
+            return newPosition
+          }
+        }
+
+        return 0
+      }
+
+      // Set initial value to empty string
+      input.value = ''
+    </script>
+  </body>
+</html>

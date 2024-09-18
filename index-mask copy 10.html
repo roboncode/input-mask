@@ -18,31 +18,23 @@
   </head>
   <body>
     <label for="maskedInput">Enter Number:</label>
-    <input type="text" id="maskedInput" placeholder="(###) ###-####" style="font-family: monospace" />
+    <input type="text" id="maskedInput" placeholder="(***) ***-****" style="font-family: monospace" />
 
     <script>
       const unmaskedChar = '*'
-      // const pattern = '(***) ***-****'
-      // const pattern = '***-***-****'
-      // const pattern = '  ******'
-      const pattern = '**/**/****'
-      // const displayMask = '___-___-____'
-      // const displayMask = '$        '
-      const displayMask = '__/__/____'
-      // const displayMask = new Array(pattern.length).fill(' ').join('')
-      const enableMasking = true
+      // const mask = "(###) ###-####";
+      const pattern = '(***) ***-****'
       const input = document.getElementById('maskedInput')
       const unmaskedCharsRegex = /[^a-zA-Z0-9]/g
       const maskedCharsRegex = /[a-zA-Z0-9]/
 
-      if (enableMasking) {
-        // Set initial value based on enableMasking
-        input.value = displayMask
-        input.addEventListener('input', inputHandler)
-        input.addEventListener('keydown', keydownHandler)
-        input.addEventListener('click', clickHandler)
-        input.addEventListener('copy', copyHandler)
-      }
+      // Set initial value to the full mask
+      input.value = pattern
+
+      input.addEventListener('input', inputHandler)
+      input.addEventListener('keydown', keydownHandler)
+      input.addEventListener('click', clickHandler)
+      input.addEventListener('copy', copyHandler)
 
       function copyHandler(e) {
         e.preventDefault()
@@ -71,8 +63,7 @@
         let cursorPosition = input.selectionStart
         let oldValue = input.value
         let strippedValue = oldValue.replace(unmaskedCharsRegex, '')
-
-        let newValue = enableMasking ? applyMask(strippedValue, displayMask, pattern) : strippedValue
+        let newValue = applyMask(strippedValue, pattern)
 
         // Count input characters before cursor
         let inputCharsBefore = oldValue.slice(0, cursorPosition).replace(unmaskedCharsRegex, '').length
@@ -180,17 +171,19 @@
         }
       }
 
-      function applyMask(value, displayMask, pattern) {
-        if (!enableMasking) return value
-
+      function applyMask(value, mask) {
         let maskedValue = ''
         let valueIndex = 0
 
-        for (let i = 0; i < displayMask.length; i++) {
-          if (pattern[i] === unmaskedChar) {
-            maskedValue += valueIndex < value.length ? value[valueIndex++] : displayMask[i]
+        // loop through the mask
+        for (let i = 0; i < mask.length; i++) {
+          // if the character is unmasked, add the next character from the value to the masked value
+          if (mask[i] === unmaskedChar) {
+            // if the value index is less than the value length, add the next character from the value to the masked value
+            maskedValue += valueIndex < value.length ? value[valueIndex++] : unmaskedChar
           } else {
-            maskedValue += displayMask[i]
+            // if the character is masked, add the character to the masked value
+            maskedValue += mask[i]
           }
         }
 
@@ -199,7 +192,7 @@
 
       function adjustCursorPosition(cursorPosition, oldValue, newValue) {
         // Move the cursor to skip over non-digit characters
-        while (cursorPosition < newValue.length && !maskedCharsRegex.test(newValue[cursorPosition])) {
+        while (cursorPosition < newValue.length && /\D/.test(newValue[cursorPosition])) {
           cursorPosition++
         }
         return cursorPosition
@@ -241,7 +234,6 @@
       function findPreviousPosition(value, currentPosition) {
         // TODO: THIS I NEW NEEDS, TESTING if currentPosition is less than 0, return 0
         if (currentPosition < 0) {
-          debugger
           return 0
         }
 
@@ -259,8 +251,8 @@
         return 0
       }
 
-      // Set initial value based on enableMasking
-      input.value = enableMasking ? displayMask : ''
+      // Set initial value to empty string
+      input.value = ''
     </script>
   </body>
 </html>

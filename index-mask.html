@@ -22,6 +22,7 @@
 
     <script>
       const unmaskedChar = '*'
+      const defaultValue = '01012024'
       // const pattern = '(***) ***-****'
       // const pattern = '***-***-****'
       // const pattern = '  ******'
@@ -285,7 +286,11 @@
       }
 
       // Set initial value based on enableMasking
-      input.value = enableMasking ? displayMask : ''
+      if (defaultValue) {
+        input.value = applyMask(defaultValue, displayMask, pattern)
+      } else {
+        input.value = enableMasking ? displayMask : ''
+      }
     </script>
   </body>
 </html>

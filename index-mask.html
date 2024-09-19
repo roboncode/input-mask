@@ -29,11 +29,11 @@
       // const displayMask = '___-___-____'
       // const displayMask = '$        '
       const displayMask = '__/__/____'
+      const valueType = 'formatted' // 'raw' or 'formatted'
       // const displayMask = new Array(pattern.length).fill(' ').join('')
       const enableMasking = true
+      const inputType = 'numeric' // 'text' or 'numeric'
       const input = document.getElementById('maskedInput')
-      const unmaskedCharsRegex = /[^a-zA-Z0-9]/g
-      const maskedCharsRegex = /[a-zA-Z0-9]/
 
       if (enableMasking) {
         // Set initial value based on enableMasking
@@ -44,14 +44,32 @@
         input.addEventListener('copy', copyHandler)
       }
 
+      function getUnmaskedCharsRegex() {
+        if (inputType === 'numeric') {
+          return /[^0-9]/g
+        }
+        return /[^a-zA-Z0-9]/g
+      }
+
+      function getMaskedCharsRegex() {
+        if (inputType === 'numeric') {
+          return /[0-9]/
+        }
+        return /[a-zA-Z0-9]/
+      }
+
       function copyHandler(e) {
         e.preventDefault()
-        // copy only the unmasked characters
-        let text = input.value.replace(unmaskedCharsRegex, '')
+        const unmaskedCharsRegex = getUnmaskedCharsRegex()
+
+        // return raw value if valueType is 'raw', otherwise return formatted value
+        let text = valueType === 'raw' ? input.value.replace(unmaskedCharsRegex, '') : input.value
         navigator.clipboard.writeText(text)
       }
 
       function clickHandler(e) {
+        const maskedCharsRegex = getMaskedCharsRegex()
+
         let value = e.target.value
         // use regex to find the last masked character position in value
         const lastMaskedCharPos = value.split('').findLastIndex(char => maskedCharsRegex.test(char)) + 1
@@ -67,6 +85,9 @@
       }
 
       function inputHandler(e) {
+        const unmaskedCharsRegex = getUnmaskedCharsRegex()
+        const maskedCharsRegex = getMaskedCharsRegex()
+
         let input = e.target
         let cursorPosition = input.selectionStart
         let oldValue = input.value
@@ -198,6 +219,8 @@
       }
 
       function adjustCursorPosition(cursorPosition, oldValue, newValue) {
+        const maskedCharsRegex = getMaskedCharsRegex()
+
         // Move the cursor to skip over non-digit characters
         while (cursorPosition < newValue.length && !maskedCharsRegex.test(newValue[cursorPosition])) {
           cursorPosition++
@@ -206,6 +229,8 @@
       }
 
       function findNextPosition(value, currentPosition) {
+        const maskedCharsRegex = getMaskedCharsRegex()
+
         // if currentPosition is greater than or equal to the value length, return the value length
         if (currentPosition >= value.length - 1) {
           return value.length // Stay at the end if already at or past the last character

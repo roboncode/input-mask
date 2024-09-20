@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Masked Input</title>
+    <style>
+      body {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      input {
+        font-size: 1.2em;
+        padding: 5px;
+        width: 250px;
+        color: black; /* User input color */
+        font-family: monospace;
+      }
+
+      input::placeholder {
+        color: #999; /* Placeholder color */
+      }
+    </style>
+  </head>
+  <body>
+    <div>Input with overlay</div>
+    <div id="text-1" style="position: relative">
+      <input />
+      <span class="overlay"></span>
+    </div>
+
+    <div>Input with inlay</div>
+    <div id="text-2" style="position: relative">
+      <input />
+    </div>
+
+    <div>Input with no format</div>
+    <div id="text-3" style="position: relative">
+      <input />
+    </div>
+
+    <input type="text" value="1234567890" />
+    <!-- <input type="date" value="09192024" /> -->
+
+    <script src="./textbox.js"></script>
+    <script>
+       maskIt(document.querySelector('#text-1 input'), {
+        enableMasking: true,
+        defaultValue: '',
+        pattern: '(***) ***-****',
+        // displayMask: '(***) ***-****',
+        valueType: 'raw',
+        inputType: 'text',
+        overlay: document.querySelector('#text-1 .overlay')
+       })
+
+       maskIt(document.querySelector('#text-2 input'), {
+        enableMasking: true,
+        defaultValue: '',
+        pattern: '(***) ***-****',
+        displayMask: '(   )    -    ',
+        valueType: 'raw',
+        inputType: 'text',
+        // overlay: document.querySelector('#text-2 .overlay')
+       })
+
+       maskIt(document.querySelector('#text-3 input'), {
+        enableMasking: true,
+        defaultValue: '',
+        pattern: '(***) ***-****',
+        displayMask: '',
+        valueType: 'raw',
+        inputType: 'numeric',
+       })
+    </script>
+  </body>
+</html>
